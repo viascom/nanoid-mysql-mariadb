@@ -43,6 +43,7 @@ BEGIN
     END IF;
 END;
 $$
+
 DELIMITER ;
 
 INSERT INTO mytable (a_column)
@@ -57,6 +58,69 @@ FROM mytable;
 Execute the file `nanoid.sql` to create the `nanoid()` function on your defined schema. The nanoid() function will only be available in the specific database where you run the SQL code provided.
 
 **Manually create the function in each database:** You can connect to each database and create the function. This function can be created manually or through a script if you have many databases. Remember to manage updates to the function. If you change the function in one database, those changes will only be reflected in the other databases if you update each function.
+
+# Auto ID Generation with Triggers
+
+This guide shows how to set up triggers for auto-generating unique IDs using our function `nanoid()`.
+
+## Prerequisites
+
+You should have already created the function `nanoid()` that generates unique identifiers.
+
+## Creating a Trigger
+
+A trigger auto-executes certain instructions on database events. Here's an example for an `INSERT` operation on a table `mytable`:
+
+```sql
+DELIMITER $$
+
+CREATE TRIGGER generate_nanoid_mytable
+BEFORE INSERT ON mytable
+FOR EACH ROW
+BEGIN
+    IF NEW.id IS NULL OR NEW.id = '' THEN
+        SET NEW.id = nanoid();
+    END IF;
+END;
+
+$$
+DELIMITER ;
+```
+
+This trigger auto-generates a unique ID via `nanoid()` when a new row is inserted into `mytable`.
+
+## Triggers for Multiple Tables
+
+For multiple tables, create a unique trigger for each:
+
+```sql
+DELIMITER $$
+
+CREATE TRIGGER generate_nanoid_mytable1
+BEFORE INSERT ON mytable1
+FOR EACH ROW
+BEGIN
+    IF NEW.id IS NULL OR NEW.id = '' THEN
+        SET NEW.id = nanoid();
+    END IF;
+END;
+
+$$
+
+CREATE TRIGGER generate_nanoid_mytable2
+BEFORE INSERT ON mytable2
+FOR EACH ROW
+BEGIN
+    IF NEW.id IS NULL OR NEW.id = '' THEN
+        SET NEW.id = nanoid();
+    END IF;
+END;
+
+$$
+DELIMITER ;
+```
+
+Replace `mytable1`, `mytable2`, and `nanoid()` with your actual table names and function name you want to use.
 
 ## Authors 🖥️
 
