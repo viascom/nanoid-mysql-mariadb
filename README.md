@@ -59,6 +59,10 @@ Execute the file `nanoid.sql` to create the `nanoid()` function on your defined 
 
 **Manually create the function in each database:** You can connect to each database and create the function. This function can be created manually or through a script if you have many databases. Remember to manage updates to the function. If you change the function in one database, those changes will only be reflected in the other databases if you update each function.
 
+## Using PostgreSQL?
+
+If you're using PostgreSQL and you found this library helpful, we have a similar library for PostgreSQL too! Check out our [Nano ID for PostgreSQL](https://github.com/viascom/nanoid-postgres) repository to utilize the same capabilities in your PostgreSQL databases.
+
 ## Auto ID Generation with Triggers
 
 This guide shows how to set up triggers for auto-generating unique IDs using our function `nanoid()`.
