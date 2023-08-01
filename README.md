@@ -59,15 +59,15 @@ Execute the file `nanoid.sql` to create the `nanoid()` function on your defined 
 
 **Manually create the function in each database:** You can connect to each database and create the function. This function can be created manually or through a script if you have many databases. Remember to manage updates to the function. If you change the function in one database, those changes will only be reflected in the other databases if you update each function.
 
-# Auto ID Generation with Triggers
+## Auto ID Generation with Triggers
 
 This guide shows how to set up triggers for auto-generating unique IDs using our function `nanoid()`.
 
-## Prerequisites
+### Prerequisites
 
 You should have already created the function `nanoid()` that generates unique identifiers.
 
-## Creating a Trigger
+### Creating a Trigger
 
 A trigger auto-executes certain instructions on database events. Here's an example for an `INSERT` operation on a table `mytable`:
 
@@ -89,7 +89,7 @@ DELIMITER ;
 
 This trigger auto-generates a unique ID via `nanoid()` when a new row is inserted into `mytable`.
 
-## Triggers for Multiple Tables
+### Triggers for Multiple Tables
 
 For multiple tables, create a unique trigger for each:
 
