@@ -6,13 +6,13 @@ _Inspired by the following parent project: [ai/nanoid](https://github.com/ai/nan
 
 A tiny, secure, URL-friendly, unique string ID generator for MySQL / MariaDB.
 
-> “An amazing level of senseless perfectionism,
-> which is simply impossible not to respect.”
+> “An amazing level of senseless perfectionism, which is simply impossible not to respect.”
 
 * **Small.** Just a simple MySQL/MariaDB function.
-* **Safe.** It uses pgcrypto random generator.
+* **Safe.** It uses hardware random generator. Can be used in clusters.
 * **Short IDs.** It uses a larger alphabet than UUID (`A-Za-z0-9_-`).
   So ID size was reduced from 36 to 21 symbols.
+* **Portable**. Nano ID was ported to (20 programming languages)[https://github.com/ai/nanoid/blob/main/README.md#other-programming-languages].
 
 ## Use
 ```sql
@@ -58,10 +58,6 @@ FROM mytable;
 Execute the file `nanoid.sql` to create the `nanoid()` function on your defined schema. The nanoid() function will only be available in the specific database where you run the SQL code provided.
 
 **Manually create the function in each database:** You can connect to each database and create the function. This function can be created manually or through a script if you have many databases. Remember to manage updates to the function. If you change the function in one database, those changes will only be reflected in the other databases if you update each function.
-
-## Using PostgreSQL?
-
-If you're using PostgreSQL and you found this library helpful, we have a similar library for PostgreSQL too! Check out our [Nano ID for PostgreSQL](https://github.com/viascom/nanoid-postgres) repository to utilize the same capabilities in your PostgreSQL databases.
 
 ## Auto ID Generation with Triggers
 
@@ -127,6 +123,10 @@ DELIMITER ;
 ```
 
 Replace `mytable1`, `mytable2`, and `nanoid()` with your actual table names and function name you want to use.
+
+## Using PostgreSQL?
+
+If you're using PostgreSQL and you found this library helpful, we have a similar library for PostgreSQL too! Check out our [Nano ID for PostgreSQL](https://github.com/viascom/nanoid-postgres) repository to utilize the same capabilities in your PostgreSQL databases.
 
 ## Authors 🖥️
 
