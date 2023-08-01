@@ -21,38 +21,6 @@ SELECT nanoid_simple(15); -- size parameter set to return 15 digit ids only
 SELECT nanoid_custom(3, 'abcdefghij'); -- custom size and alphabet parameters defined. nanoid() generates ids concerning them
 ```
 
-```sql
-DELIMITER $$
-
-DROP TABLE IF EXISTS mytable;
-CREATE TABLE mytable
-(
-    id       VARCHAR(21) PRIMARY KEY,
-    a_column TEXT NOT NULL
-);
-
-CREATE TRIGGER generate_nanoid
-    BEFORE INSERT
-    ON mytable
-    FOR EACH ROW
-BEGIN
-    IF NEW.id IS NULL OR NEW.id = '' THEN
-        SET NEW.id = nanoid();
-        -- OR: SET NEW.id = nanoid_simple(21);
-        -- OR: SET NEW.id = nanoid_custom(21, '_-0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ');
-    END IF;
-END;
-$$
-
-DELIMITER ;
-
-INSERT INTO mytable (a_column)
-VALUES ('Hi :)');
-
-SELECT *
-FROM mytable;
-```
-
 ## Getting Started
 
 Execute the file `nanoid.sql` to create the `nanoid()` function on your defined schema. The nanoid() function will only be available in the specific database where you run the SQL code provided.
