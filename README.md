@@ -25,7 +25,7 @@ SELECT nanoid_custom(3, 'abcdefghij'); -- custom size and alphabet parameters de
 
 ### Requirements
 * MySQL 5.7.4 or newer
-* MariaDB 10.1.1 or newer
+* MariaDB 10.10.0 or newer
 
 Execute the file `nanoid.sql` to create the `nanoid()`, `nanoid_simple()` and `nanoid_custom()` functions on your defined schema. The nanoid() functions will only be available in the specific database where you run the SQL code provided.
 
