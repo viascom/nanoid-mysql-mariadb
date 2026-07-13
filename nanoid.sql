@@ -104,7 +104,7 @@ BEGIN
     END IF;
 
     SET alphabetLength = CHAR_LENGTH(alphabet);
-    SET maskValue = (2 << CAST(FLOOR(LOG(alphabetLength - 1) / LOG(2)) AS SIGNED)) - 1;
+    SET maskValue = (2 << CAST(FLOOR(LOG(GREATEST(alphabetLength - 1, 1)) / LOG(2)) AS SIGNED)) - 1;
     SET step = CEILING(additionalBytesFactor * maskValue * size / alphabetLength);
 
     IF step > 1024 THEN

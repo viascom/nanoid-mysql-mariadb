@@ -57,7 +57,7 @@ run_sql_file() {
 for TARGET in $TARGETS; do
     ENGINE="${TARGET%%:*}"
     IMAGE="$TARGET"
-    NAME="nanoid-test-$(echo "$TARGET" | tr ':.' '--')"
+    NAME="nanoid-test-${TARGET//[:.]/-}"
     CLIENT="$(client_for "$ENGINE")"
     echo "==> ${TARGET} (${IMAGE})"
 

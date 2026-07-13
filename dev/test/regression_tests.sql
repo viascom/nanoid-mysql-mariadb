@@ -20,7 +20,7 @@
  */
 
 -- Regression tests for nanoid.sql. Run after installing nanoid.sql, e.g. via dev/test/run_tests.sh.
--- Compatible with MySQL 5.7 onwards and MariaDB 10.10 onwards: no CTEs, no window functions.
+-- Compatible with MySQL 5.6 onwards and MariaDB 10.10 onwards: no CTEs, no window functions.
 -- Every statement must succeed; the mysql client aborts the batch run on the first error.
 
 -- ---------------------------------------------------------------------------------------------
@@ -101,6 +101,12 @@ BEGIN
     SELECT COUNT(*) INTO total FROM nanoid_test_map WHERE CHAR_LENGTH(new_id) <> 21;
     IF total <> 0 THEN
         SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'INSERT SELECT produced ids with wrong length';
+    END IF;
+
+    -- Single-symbol alphabets must work (LOG(0) is NULL on MySQL/MariaDB and previously
+    -- turned the byte-generation loop into an endless loop).
+    IF nanoid_custom(5, 'a', 1.6) <> 'aaaaa' THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'single-symbol alphabet nanoid_custom() failed';
     END IF;
 
     -- No artificial size cap: id generation must work for any requested length, including
