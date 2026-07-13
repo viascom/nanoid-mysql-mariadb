@@ -95,7 +95,7 @@ Replace `mytable1`, `mytable2`, and `nanoid()` with your actual table names and 
 
 ### Requirements
 
-* MySQL 5.7.4 or newer (`RANDOM_BYTES()`)
+* MySQL 5.6.17 or newer (`RANDOM_BYTES()`, introduced in MySQL 5.7.4 and backported to 5.6.17)
 * MariaDB 10.10.0 or newer (`RANDOM_BYTES()`)
 
 Execute the file `nanoid.sql` to create the `nanoid()`, `nanoid_simple()`, `nanoid_custom()` and
@@ -170,7 +170,7 @@ generation.
 Requirements: Docker.
 
 ```bash
-# Test the full default matrix (MySQL 5.7, 8.0, 8.4, 9 and MariaDB 10.10, 10.11, 11.4, 11.8, 12)
+# Test the full default matrix (every GA release series: MySQL 5.6 through 9.7 and MariaDB 10.10 through 12.3)
 dev/test/run_tests.sh
 
 # Test only specific engine:version targets
