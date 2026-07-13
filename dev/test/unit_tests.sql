@@ -1,3 +1,4 @@
+DELIMITER $$
 /*
  * Copyright 2026 Viascom Ltd liab. Co
  *
@@ -25,7 +26,6 @@
 -- REGEXP is case-insensitive on ci collations, so the case-restricted alphabets get an
 -- additional binary comparison guard.
 
-DELIMITER $$
 
 DROP PROCEDURE IF EXISTS nanoid_unit_tests$$
 CREATE PROCEDURE nanoid_unit_tests()

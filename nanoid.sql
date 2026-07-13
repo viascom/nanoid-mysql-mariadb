@@ -1,3 +1,4 @@
+DELIMITER $$
 /*
  * Copyright 2026 Viascom Ltd liab. Co
  *
@@ -24,7 +25,6 @@
 -- READS SQL DATA keeps the functions creatable when binary logging is enabled (error 1418)
 -- without requiring log_bin_trust_function_creators.
 
-DELIMITER $$
 
 -- Generates an optimized random string of a specified size using the given alphabet, mask, and step.
 -- This optimized version is designed for higher performance and lower memory overhead.

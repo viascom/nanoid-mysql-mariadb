@@ -1,3 +1,4 @@
+DELIMITER $$
 /*
  * Copyright 2026 Viascom Ltd liab. Co
  *
@@ -23,7 +24,6 @@
 -- and b_nanoid(size, alphabet, additionalBytesFactor) (see a_nanoid.sql / b_nanoid.sql), then run this file.
 -- MySQL/MariaDB stored functions have no default parameters, so the harness passes the defaults explicitly.
 
-DELIMITER $$
 
 DROP PROCEDURE IF EXISTS nanoid_benchmarks$$
 CREATE PROCEDURE nanoid_benchmarks()

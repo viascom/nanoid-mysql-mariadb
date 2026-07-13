@@ -63,8 +63,9 @@ INSERT INTO nanoid_test_map (old_id, new_id)
 SELECT g, nanoid()
 FROM nanoid_test_src;
 
--- Verify the generated data: correct row counts, correct length, no collisions.
 DELIMITER $$
+
+-- Verify the generated data: correct row counts, correct length, no collisions.
 
 DROP PROCEDURE IF EXISTS nanoid_regression_checks$$
 CREATE PROCEDURE nanoid_regression_checks()
