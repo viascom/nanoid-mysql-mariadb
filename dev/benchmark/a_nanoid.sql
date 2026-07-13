@@ -1,0 +1,1 @@
+-- PLACE IMPLEMENTATION A 'a_nanoid(size, alphabet, additionalBytesFactor)' HERE
