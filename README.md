@@ -110,7 +110,7 @@ If you change the alphabet of the `nanoid_custom()` function, you could optimize
 by calculating a new additional bytes factor with the following SQL statement:
 
 ```sql
-SELECT ROUND(1 + ABS((((2 << CAST(FLOOR(LOG(CHAR_LENGTH(input.alphabet) - 1) / LOG(2)) AS SIGNED)) - 1) -
+SELECT ROUND(1 + ABS((((2 << CAST(FLOOR(LOG(GREATEST(CHAR_LENGTH(input.alphabet) - 1, 1)) / LOG(2)) AS SIGNED)) - 1) -
                       CHAR_LENGTH(input.alphabet)) / CHAR_LENGTH(input.alphabet)), 2) AS `Optimal additional bytes factor`
 FROM (SELECT '23456789abcdefghijklmnopqrstuvwxyz' AS alphabet) input;
 
@@ -129,8 +129,9 @@ The `nanoid_optimized()` function is an advanced version of the `nanoid_custom()
 for higher performance and lower memory overhead. While it provides a more efficient mechanism to
 generate unique identifiers, it assumes that you know precisely how you want to use it.
 
-🚫 **Warning**: No checks are performed inside `nanoid_optimized()`. Use it only if you're sure about
-the parameters you're passing.
+🚫 **Warning**: Apart from minimal termination guards (size, alphabet, mask and step must be defined
+and positive), no checks are performed inside `nanoid_optimized()`; in particular the mask is not
+validated against the alphabet. Use it only if you're sure about the parameters you're passing.
 
 ### Function Signature
 
@@ -147,8 +148,8 @@ nanoid_optimized(
 
 - `size`: The desired length of the generated string.
 - `alphabet`: The set of characters to choose from for generating the string.
-- `mask`: The mask used for mapping random bytes to alphabet indices. The value should be `(2^n) - 1`,
-  where `n` is a power of 2 less than or equal to the alphabet size.
+- `mask`: The mask used for mapping random bytes to alphabet indices. The value should be `(2^k) - 1`,
+  where `2^k` is the smallest power of two greater than or equal to the alphabet size.
 - `step`: The number of random bytes to generate in each iteration, between 1 and 1024. A larger value
   might speed up the function but will also increase memory usage.
 

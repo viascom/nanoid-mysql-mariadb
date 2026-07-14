@@ -109,6 +109,20 @@ BEGIN
         SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'single-symbol alphabet nanoid_custom() failed';
     END IF;
 
+    -- nanoid_optimized() must reject inputs that would otherwise spin its generation loop
+    -- forever (the only exit is reached after a character has been appended).
+    BEGIN
+        DECLARE guardFired INT DEFAULT 0;
+        DECLARE guardResult LONGTEXT;
+        BEGIN
+            DECLARE CONTINUE HANDLER FOR SQLSTATE '45000' SET guardFired = 1;
+            SET guardResult = nanoid_optimized(0, defaultAlphabet, 63, 34);
+        END;
+        IF guardFired <> 1 THEN
+            SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'nanoid_optimized() termination guard did not fire';
+        END IF;
+    END;
+
     -- No artificial size cap: id generation must work for any requested length, including
     -- sizes that need more than 100 passes over the byte-generation loop (step is capped at
     -- 1024, so 102,401 characters with the default alphabet need 101 passes).

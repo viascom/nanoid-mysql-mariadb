@@ -28,12 +28,13 @@ DELIMITER $$
 
 -- Generates an optimized random string of a specified size using the given alphabet, mask, and step.
 -- This optimized version is designed for higher performance and lower memory overhead.
--- No checks are performed! Use it only if you really know what you are doing.
+-- Beyond the termination guards below, no checks are performed (the mask is not validated against
+-- the alphabet)! Use it only if you really know what you are doing.
 DROP FUNCTION IF EXISTS nanoid_optimized$$
 CREATE FUNCTION nanoid_optimized(
     size INT, -- The desired length of the generated string.
     alphabet TEXT, -- The set of characters to choose from for generating the string.
-    mask INT, -- The mask used for mapping random bytes to alphabet indices. Should be `(2^n) - 1` where `n` is a power of 2 less than or equal to the alphabet size.
+    mask INT, -- The mask used for mapping random bytes to alphabet indices. Should be `(2^k) - 1` where `2^k` is the smallest power of two greater than or equal to the alphabet size.
     step INT -- The number of random bytes to generate in each iteration. A larger value may speed up the function but increase memory usage. Must be between 1 and 1024.
 )
     RETURNS LONGTEXT -- A randomly generated NanoId String
@@ -47,6 +48,20 @@ BEGIN
     DECLARE randomBytes VARBINARY(1024);
     DECLARE alphabetIndex INT;
     DECLARE alphabetLength INT DEFAULT 64;
+
+    -- Termination guards: without them these inputs would spin the generation loop forever,
+    -- since the only exit is reached after a character has been appended.
+    IF size IS NULL OR size < 1 THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'The size must be defined and greater than 0!';
+    END IF;
+
+    IF alphabet IS NULL OR CHAR_LENGTH(alphabet) = 0 THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'The alphabet can''t be undefined, zero or bigger than 255 symbols!';
+    END IF;
+
+    IF mask IS NULL OR mask < 1 OR step IS NULL OR step < 1 THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'The mask and step must be defined and greater than 0!';
+    END IF;
 
     SET alphabetLength = CHAR_LENGTH(alphabet);
 
