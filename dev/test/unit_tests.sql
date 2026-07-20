@@ -175,6 +175,46 @@ BEGIN
         SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'nanoid_prefixed(NULL) must not produce a NULL id';
     END IF;
 
+    -- 256-symbol alphabet: every random byte maps directly to a valid index.
+    -- MySQL's latin1 defines all 256 byte values, so converting each byte to a character
+    -- yields 256 distinct symbols without depending on the client connection charset.
+    BEGIN
+        DECLARE alphabet256 LONGTEXT CHARACTER SET utf8mb4 DEFAULT '';
+        DECLARE guardFired INT DEFAULT 0;
+
+        SET counter = 0;
+        WHILE counter < 256
+            DO
+                SET alphabet256 = CONCAT(alphabet256, CONVERT(CHAR(counter) USING latin1));
+                SET counter = counter + 1;
+            END WHILE;
+        IF CHAR_LENGTH(alphabet256) <> 256 THEN
+            SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Test setup: 256-symbol alphabet has the wrong length';
+        END IF;
+
+        SET generated_id = nanoid_custom(21, alphabet256, 1.6, '');
+        IF CHAR_LENGTH(generated_id) <> 21 THEN
+            SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Size 21 (256-symbol alphabet) nanoid length is incorrect';
+        END IF;
+        SET counter = 1;
+        WHILE counter <= 21
+            DO
+                IF LOCATE(SUBSTRING(generated_id, counter, 1), alphabet256) = 0 THEN
+                    SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Size 21 (256-symbol alphabet) nanoid contains characters outside the alphabet';
+                END IF;
+                SET counter = counter + 1;
+            END WHILE;
+
+        -- Alphabets with more than 256 symbols are rejected
+        BEGIN
+            DECLARE CONTINUE HANDLER FOR SQLSTATE '45000' SET guardFired = 1;
+            SET generated_id = nanoid_custom(21, CONCAT(alphabet256, 'x'), 1.6, '');
+        END;
+        IF guardFired <> 1 THEN
+            SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Alphabet with more than 256 symbols was not rejected';
+        END IF;
+    END;
+
     SELECT 'All tests passed successfully!' AS result;
 END$$
 

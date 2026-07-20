@@ -99,7 +99,7 @@ $$
 DROP FUNCTION IF EXISTS nanoid_custom$$
 CREATE FUNCTION nanoid_custom(
     size INT, -- The number of symbols in the NanoId String. Must be greater than 0.
-    alphabet TEXT, -- The symbols used in the NanoId String. Must contain between 1 and 255 symbols.
+    alphabet TEXT, -- The symbols used in the NanoId String. Must contain between 1 and 256 symbols.
     additionalBytesFactor DOUBLE, -- The additional bytes factor used for calculating the step size. Acts as a safety margin for rejected bytes. Must be equal or greater then 1.
     prefix TEXT -- An optional prefix prepended to the NanoId String (e.g. 'usr_'). Does not count towards size; NULL behaves like ''.
 )
@@ -117,8 +117,8 @@ BEGIN
         SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'The size must be defined and greater than 0!';
     END IF;
 
-    IF alphabet IS NULL OR CHAR_LENGTH(alphabet) = 0 OR CHAR_LENGTH(alphabet) > 255 THEN
-        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'The alphabet can''t be undefined, zero or bigger than 255 symbols!';
+    IF alphabet IS NULL OR CHAR_LENGTH(alphabet) = 0 OR CHAR_LENGTH(alphabet) > 256 THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'The alphabet can''t be undefined, zero or bigger than 256 symbols!';
     END IF;
 
     IF additionalBytesFactor IS NULL OR additionalBytesFactor < 1 THEN
