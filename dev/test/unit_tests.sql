@@ -120,6 +120,30 @@ BEGIN
             SET counter = counter + 1;
         END WHILE;
 
+    -- Size 5, single-symbol alphabet: the cutoff scheme handles alphabets of length 1 natively
+    SET generated_id = nanoid_custom(5, 'a', 1.6);
+    IF generated_id <> 'aaaaa' THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Size 5 (single-symbol alphabet) nanoid is incorrect';
+    END IF;
+
+    -- Non-power-of-two alphabet (33 symbols): every symbol must be reachable
+    SET generated_id = nanoid_custom(5000, 'abcdefghijklmnopqrstuvwxyz0123456', 1.6);
+    IF CHAR_LENGTH(generated_id) <> 5000 THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Size 5000 (33 symbols) nanoid length is incorrect';
+    END IF;
+    IF generated_id NOT REGEXP '^[a-z0-6]*$'
+        OR CAST(LOWER(generated_id) AS BINARY) <> CAST(generated_id AS BINARY) THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Size 5000 (33 symbols) nanoid contains invalid characters';
+    END IF;
+    SET counter = 1;
+    WHILE counter <= 33
+        DO
+            IF LOCATE(SUBSTRING('abcdefghijklmnopqrstuvwxyz0123456', counter, 1), generated_id) = 0 THEN
+                SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Symbol missing in output of 33-symbol alphabet';
+            END IF;
+            SET counter = counter + 1;
+        END WHILE;
+
     SELECT 'All tests passed successfully!' AS result;
 END$$
 

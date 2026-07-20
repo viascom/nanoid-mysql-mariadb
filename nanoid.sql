@@ -24,17 +24,20 @@ DELIMITER $$
 -- so those declarations from nanoid-postgres are intentionally absent here.
 -- READS SQL DATA keeps the functions creatable when binary logging is enabled (error 1418)
 -- without requiring log_bin_trust_function_creators.
+-- Unlike nanoid-postgres, this script cannot run atomically: MySQL and MariaDB issue an implicit
+-- commit for every DROP FUNCTION / CREATE FUNCTION. If a run fails midway, rerun the script to
+-- complete the installation.
 
 
--- Generates an optimized random string of a specified size using the given alphabet, mask, and step.
+-- Generates an optimized random string of a specified size using the given alphabet, cutoff, and step.
 -- This optimized version is designed for higher performance and lower memory overhead.
--- Beyond the termination guards below, no checks are performed (the mask is not validated against
+-- Beyond the termination guards below, no checks are performed (the cutoff is not validated against
 -- the alphabet)! Use it only if you really know what you are doing.
 DROP FUNCTION IF EXISTS nanoid_optimized$$
 CREATE FUNCTION nanoid_optimized(
     size INT, -- The desired length of the generated string.
     alphabet TEXT, -- The set of characters to choose from for generating the string.
-    mask INT, -- The mask used for mapping random bytes to alphabet indices. Should be `(2^k) - 1` where `2^k` is the smallest power of two greater than or equal to the alphabet size.
+    cutoff INT, -- The exclusive upper bound for accepted random bytes. Should be `256 - (256 % CHAR_LENGTH(alphabet))`; bytes greater than or equal to it are rejected to avoid modulo bias.
     step INT -- The number of random bytes to generate in each iteration. A larger value may speed up the function but increase memory usage. Must be between 1 and 1024.
 )
     RETURNS LONGTEXT -- A randomly generated NanoId String
@@ -46,7 +49,7 @@ BEGIN
     DECLARE idBuilder LONGTEXT DEFAULT '';
     DECLARE counter INT DEFAULT 0;
     DECLARE randomBytes VARBINARY(1024);
-    DECLARE alphabetIndex INT;
+    DECLARE randomByte INT;
     DECLARE alphabetLength INT DEFAULT 64;
 
     -- Termination guards: without them these inputs would spin the generation loop forever,
@@ -56,11 +59,11 @@ BEGIN
     END IF;
 
     IF alphabet IS NULL OR CHAR_LENGTH(alphabet) = 0 THEN
-        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'The alphabet can''t be undefined, zero or bigger than 255 symbols!';
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'The alphabet can''t be undefined or zero!';
     END IF;
 
-    IF mask IS NULL OR mask < 1 OR step IS NULL OR step < 1 THEN
-        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'The mask and step must be defined and greater than 0!';
+    IF cutoff IS NULL OR cutoff < 1 OR step IS NULL OR step < 1 THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'The cutoff and step must be defined and greater than 0!';
     END IF;
 
     SET alphabetLength = CHAR_LENGTH(alphabet);
@@ -71,9 +74,12 @@ BEGIN
         SET counter = 0;
         WHILE counter < step
             DO
-                SET alphabetIndex = (ASCII(SUBSTRING(randomBytes, counter + 1, 1)) & mask) + 1;
-                IF alphabetIndex <= alphabetLength THEN
-                    SET idBuilder = CONCAT(idBuilder, SUBSTRING(alphabet, alphabetIndex, 1));
+                -- Random bytes are 0-255. `byte % alphabetLength` would make some symbols more likely
+                -- when 256 is not a multiple of the alphabet length. Bytes greater than or equal to
+                -- `cutoff` are rejected instead, so every symbol keeps an equal chance.
+                SET randomByte = ASCII(SUBSTRING(randomBytes, counter + 1, 1));
+                IF randomByte < cutoff THEN
+                    SET idBuilder = CONCAT(idBuilder, SUBSTRING(alphabet, (randomByte % alphabetLength) + 1, 1));
                     IF CHAR_LENGTH(idBuilder) = size THEN
                         RETURN idBuilder;
                     END IF;
@@ -103,7 +109,7 @@ CREATE FUNCTION nanoid_custom(
     READS SQL DATA
 BEGIN
     DECLARE alphabetLength INT;
-    DECLARE maskValue INT;
+    DECLARE cutoff INT;
     DECLARE step INT;
 
     IF size IS NULL OR size < 1 THEN
@@ -119,14 +125,17 @@ BEGIN
     END IF;
 
     SET alphabetLength = CHAR_LENGTH(alphabet);
-    SET maskValue = (2 << CAST(FLOOR(LOG(GREATEST(alphabetLength - 1, 1)) / LOG(2)) AS SIGNED)) - 1;
-    SET step = CEILING(additionalBytesFactor * maskValue * size / alphabetLength);
 
-    IF step > 1024 THEN
-        SET step = 1024; -- The step size can't be bigger than 1024, which is also the RANDOM_BYTES limit!
-    END IF;
+    -- Random bytes are 0-255. Bytes greater than or equal to `cutoff` are rejected to avoid
+    -- modulo bias; see nanoid_optimized().
+    SET cutoff = 256 - (256 % alphabetLength);
+    -- On average `256 / cutoff` random bytes are needed per symbol; the additional bytes
+    -- factor adds a safety margin to cover unlucky streaks of rejected bytes.
+    -- RANDOM_BYTES() accepts at most 1024 bytes per call; capping inside the expression
+    -- also keeps absurd sizes from overflowing the INT assignment.
+    SET step = LEAST(1024, CEILING(additionalBytesFactor * 256 * size / cutoff));
 
-    RETURN nanoid_optimized(size, alphabet, maskValue, step);
+    RETURN nanoid_optimized(size, alphabet, cutoff, step);
 END
 $$
 

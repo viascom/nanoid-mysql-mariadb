@@ -50,7 +50,7 @@ FROM nanoid_test_src;
 
 DROP TABLE IF EXISTS nanoid_test_ctas_optimized;
 CREATE TABLE nanoid_test_ctas_optimized AS
-SELECT nanoid_optimized(21, '_-0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ', 63, 34) AS id
+SELECT nanoid_optimized(21, '_-0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ', 256, 34) AS id
 FROM nanoid_test_src;
 
 DROP TABLE IF EXISTS nanoid_test_map;
@@ -116,7 +116,7 @@ BEGIN
         DECLARE guardResult LONGTEXT;
         BEGIN
             DECLARE CONTINUE HANDLER FOR SQLSTATE '45000' SET guardFired = 1;
-            SET guardResult = nanoid_optimized(0, defaultAlphabet, 63, 34);
+            SET guardResult = nanoid_optimized(0, defaultAlphabet, 256, 34);
         END;
         IF guardFired <> 1 THEN
             SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'nanoid_optimized() termination guard did not fire';
@@ -129,7 +129,7 @@ BEGIN
     IF CHAR_LENGTH(nanoid_custom(102401, defaultAlphabet, 1.6)) <> 102401 THEN
         SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'large nanoid_custom() failed';
     END IF;
-    IF CHAR_LENGTH(nanoid_optimized(300, defaultAlphabet, 63, 2)) <> 300 THEN
+    IF CHAR_LENGTH(nanoid_optimized(300, defaultAlphabet, 256, 2)) <> 300 THEN
         SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'nanoid_optimized() with a small step failed';
     END IF;
 
