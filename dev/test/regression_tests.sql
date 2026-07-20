@@ -105,7 +105,7 @@ BEGIN
 
     -- Single-symbol alphabets must work (LOG(0) is NULL on MySQL/MariaDB and previously
     -- turned the byte-generation loop into an endless loop).
-    IF nanoid_custom(5, 'a', 1.6) <> 'aaaaa' THEN
+    IF nanoid_custom(5, 'a', 1.6, '') <> 'aaaaa' THEN
         SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'single-symbol alphabet nanoid_custom() failed';
     END IF;
 
@@ -126,7 +126,7 @@ BEGIN
     -- No artificial size cap: id generation must work for any requested length, including
     -- sizes that need more than 100 passes over the byte-generation loop (step is capped at
     -- 1024, so 102,401 characters with the default alphabet need 101 passes).
-    IF CHAR_LENGTH(nanoid_custom(102401, defaultAlphabet, 1.6)) <> 102401 THEN
+    IF CHAR_LENGTH(nanoid_custom(102401, defaultAlphabet, 1.6, '')) <> 102401 THEN
         SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'large nanoid_custom() failed';
     END IF;
     IF CHAR_LENGTH(nanoid_optimized(300, defaultAlphabet, 256, 2)) <> 300 THEN

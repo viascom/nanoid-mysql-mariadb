@@ -93,14 +93,15 @@ $$
 -- The `nanoid_custom()` function generates a compact, URL-friendly unique identifier.
 -- Based on the given size and alphabet, it creates a randomized string that's ideal for
 -- use-cases requiring small, unpredictable IDs (e.g., URL shorteners, generated file names, etc.).
--- It is the counterpart of nanoid(size, alphabet, additionalBytesFactor) in nanoid-postgres:
+-- It is the counterpart of nanoid(size, alphabet, additionalBytesFactor, prefix) in nanoid-postgres:
 -- MySQL/MariaDB stored functions support neither default parameter values nor overloading,
--- which is why the defaults live in nanoid() and nanoid_simple() instead.
+-- which is why the defaults live in nanoid(), nanoid_simple() and nanoid_prefixed() instead.
 DROP FUNCTION IF EXISTS nanoid_custom$$
 CREATE FUNCTION nanoid_custom(
     size INT, -- The number of symbols in the NanoId String. Must be greater than 0.
     alphabet TEXT, -- The symbols used in the NanoId String. Must contain between 1 and 255 symbols.
-    additionalBytesFactor DOUBLE -- The additional bytes factor used for calculating the step size. Must be equal or greater then 1.
+    additionalBytesFactor DOUBLE, -- The additional bytes factor used for calculating the step size. Acts as a safety margin for rejected bytes. Must be equal or greater then 1.
+    prefix TEXT -- An optional prefix prepended to the NanoId String (e.g. 'usr_'). Does not count towards size; NULL behaves like ''.
 )
     RETURNS LONGTEXT -- A randomly generated NanoId String
     LANGUAGE SQL
@@ -135,7 +136,24 @@ BEGIN
     -- also keeps absurd sizes from overflowing the INT assignment.
     SET step = LEAST(1024, CEILING(additionalBytesFactor * 256 * size / cutoff));
 
-    RETURN nanoid_optimized(size, alphabet, cutoff, step);
+    RETURN CONCAT(COALESCE(prefix, ''), nanoid_optimized(size, alphabet, cutoff, step));
+END
+$$
+
+-- Generates a NanoId String with the default size of 21 symbols and the default alphabet,
+-- prepended with the given prefix. For Stripe-style typed ids: usr_..., ord_..., etc.
+-- The prefix does not count towards the size; a NULL prefix behaves like ''.
+DROP FUNCTION IF EXISTS nanoid_prefixed$$
+CREATE FUNCTION nanoid_prefixed(
+    prefix TEXT -- The prefix prepended to the NanoId String (e.g. 'usr_').
+)
+    RETURNS LONGTEXT -- A randomly generated NanoId String starting with the prefix
+    LANGUAGE SQL
+    NOT DETERMINISTIC
+    SQL SECURITY INVOKER
+    READS SQL DATA
+BEGIN
+    RETURN nanoid_custom(21, '_-0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ', 1.6, prefix);
 END
 $$
 
@@ -150,7 +168,7 @@ CREATE FUNCTION nanoid_simple(
     SQL SECURITY INVOKER
     READS SQL DATA
 BEGIN
-    RETURN nanoid_custom(size, '_-0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ', 1.6);
+    RETURN nanoid_custom(size, '_-0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ', 1.6, '');
 END
 $$
 

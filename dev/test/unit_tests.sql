@@ -80,7 +80,7 @@ BEGIN
     SET counter = 0;
     WHILE counter < numLoops
         DO
-            SET generated_id = nanoid_custom(21, 'abcdefghijklmnopqrstuvwxyz', 1.6);
+            SET generated_id = nanoid_custom(21, 'abcdefghijklmnopqrstuvwxyz', 1.6, '');
             IF CHAR_LENGTH(generated_id) <> 21 THEN
                 SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Size 21 (only lowercase) nanoid length is incorrect';
             END IF;
@@ -95,7 +95,7 @@ BEGIN
     SET counter = 0;
     WHILE counter < numLoops
         DO
-            SET generated_id = nanoid_custom(15, '0123456789', 1.6);
+            SET generated_id = nanoid_custom(15, '0123456789', 1.6, '');
             IF CHAR_LENGTH(generated_id) <> 15 THEN
                 SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Size 15 (only numbers) nanoid length is incorrect';
             END IF;
@@ -109,7 +109,7 @@ BEGIN
     SET counter = 0;
     WHILE counter < numLoops
         DO
-            SET generated_id = nanoid_custom(17, 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789', 1.6);
+            SET generated_id = nanoid_custom(17, 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789', 1.6, '');
             IF CHAR_LENGTH(generated_id) <> 17 THEN
                 SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Size 17 (uppercase + numbers) nanoid length is incorrect';
             END IF;
@@ -121,13 +121,13 @@ BEGIN
         END WHILE;
 
     -- Size 5, single-symbol alphabet: the cutoff scheme handles alphabets of length 1 natively
-    SET generated_id = nanoid_custom(5, 'a', 1.6);
+    SET generated_id = nanoid_custom(5, 'a', 1.6, '');
     IF generated_id <> 'aaaaa' THEN
         SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Size 5 (single-symbol alphabet) nanoid is incorrect';
     END IF;
 
     -- Non-power-of-two alphabet (33 symbols): every symbol must be reachable
-    SET generated_id = nanoid_custom(5000, 'abcdefghijklmnopqrstuvwxyz0123456', 1.6);
+    SET generated_id = nanoid_custom(5000, 'abcdefghijklmnopqrstuvwxyz0123456', 1.6, '');
     IF CHAR_LENGTH(generated_id) <> 5000 THEN
         SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Size 5000 (33 symbols) nanoid length is incorrect';
     END IF;
@@ -143,6 +143,37 @@ BEGIN
             END IF;
             SET counter = counter + 1;
         END WHILE;
+
+    -- Default size (21) with a prefix: the prefix does not count towards the size
+    SET generated_id = nanoid_custom(21, '_-0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ', 1.6, 'usr_');
+    IF CHAR_LENGTH(generated_id) <> 25 THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Prefixed nanoid length is incorrect';
+    END IF;
+    IF CAST(LEFT(generated_id, 4) AS BINARY) <> CAST('usr_' AS BINARY) THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Prefixed nanoid has a wrong prefix';
+    END IF;
+    IF SUBSTRING(generated_id, 5) NOT REGEXP '^[-_a-zA-Z0-9]*$' THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Prefixed nanoid contains invalid characters';
+    END IF;
+
+    -- nanoid_prefixed() convenience function
+    SET generated_id = nanoid_prefixed('ord_');
+    IF CHAR_LENGTH(generated_id) <> 25 THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'nanoid_prefixed length is incorrect';
+    END IF;
+    IF CAST(LEFT(generated_id, 4) AS BINARY) <> CAST('ord_' AS BINARY) THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'nanoid_prefixed has a wrong prefix';
+    END IF;
+
+    -- NULL prefix behaves like no prefix instead of producing a NULL id
+    SET generated_id = nanoid_custom(21, '_-0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ', 1.6, NULL);
+    IF generated_id IS NULL OR CHAR_LENGTH(generated_id) <> 21 THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'NULL prefix must not produce a NULL id';
+    END IF;
+    SET generated_id = nanoid_prefixed(NULL);
+    IF generated_id IS NULL OR CHAR_LENGTH(generated_id) <> 21 THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'nanoid_prefixed(NULL) must not produce a NULL id';
+    END IF;
 
     SELECT 'All tests passed successfully!' AS result;
 END$$
