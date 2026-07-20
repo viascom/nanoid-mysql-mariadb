@@ -24,7 +24,7 @@
 -- Every statement must succeed; the mysql client aborts the batch run on the first error.
 
 -- ---------------------------------------------------------------------------------------------
--- Source table: 50,000 rows built from cross-joined derived digit tables (no CTE, MySQL 5.7).
+-- Source table: 50,000 rows built from cross-joined derived digit tables (no CTE; MySQL 5.6+).
 -- ---------------------------------------------------------------------------------------------
 DROP TABLE IF EXISTS nanoid_test_src;
 CREATE TABLE nanoid_test_src (g INT NOT NULL);

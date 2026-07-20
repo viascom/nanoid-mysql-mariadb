@@ -50,7 +50,7 @@ BEGIN
     DECLARE counter INT DEFAULT 0;
     DECLARE randomBytes VARBINARY(1024);
     DECLARE randomByte INT;
-    DECLARE alphabetLength INT DEFAULT 64;
+    DECLARE alphabetLength INT;
 
     -- Termination guards: without them these inputs would spin the generation loop forever,
     -- since the only exit is reached after a character has been appended.

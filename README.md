@@ -135,8 +135,8 @@ SELECT TABLE_SCHEMA, TABLE_NAME FROM information_schema.VIEWS WHERE VIEW_DEFINIT
 
 Also search your application code for direct calls. When upgrading from 1.x to 3.0.0:
 
-- `nanoid_custom()` gained a `prefix` parameter: existing 3-argument calls fail with error 1318 (incorrect number of
-  arguments) until you append a prefix argument, `''` for none.
+- `nanoid_custom()` gained `additionalBytesFactor` and `prefix` parameters since 1.x: existing 2-argument calls fail
+  with error 1318 (incorrect number of arguments) until you append the two arguments, `1.6, ''` for the defaults.
 - Direct `nanoid_optimized()` calls written against an unreleased main state must replace the old `mask` argument
   with the byte cutoff `256 - (256 % CHAR_LENGTH(alphabet))`, e.g. `256` instead of `63` for the default 64-symbol
   alphabet. Old mask values keep running but silently produce biased ids in which the last alphabet symbol never
@@ -201,7 +201,7 @@ SELECT nanoid_optimized(10, '_-0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLM
 The repository ships a test suite that installs `nanoid.sql` into the official MySQL and MariaDB Docker images and
 runs the unit tests plus regression tests against each of them. The images are pulled before each run, so the latest
 minor of every series is what actually gets tested; a pull failure fails that target by default, and you can set
-`NANOID_TEST_OFFLINE=1` to allow the local image cache when you are deliberately offline. The regression tests cover
+`NANOID_TEST_OFFLINE=1` to allow the local image cache when you are deliberately offline. The test suite covers
 re-installation (issue #1), bulk generation without collisions and large-size id generation. Each target also runs an
 upgrade-path test: the previous release (from `origin/main`) is installed first, a table with a dependent
 `BEFORE INSERT` trigger is created, and the current `nanoid.sql` is applied on top; the upgrade must succeed in place
