@@ -20,13 +20,11 @@ DELIMITER $$
  * under the License.
  */
 
--- MySQL and MariaDB have no equivalent of PostgreSQL's LEAKPROOF or PARALLEL attributes,
--- so those declarations from nanoid-postgres are intentionally absent here.
 -- READS SQL DATA keeps the functions creatable when binary logging is enabled (error 1418)
 -- without requiring log_bin_trust_function_creators.
--- Unlike nanoid-postgres, this script cannot run atomically: MySQL and MariaDB issue an implicit
--- commit for every DROP FUNCTION / CREATE FUNCTION. If a run fails midway, rerun the script to
--- complete the installation.
+-- This script cannot run atomically: MySQL and MariaDB issue an implicit commit for every
+-- DROP FUNCTION / CREATE FUNCTION. If a run fails midway, rerun the script to complete the
+-- installation.
 
 
 -- Generates an optimized random string of a specified size using the given alphabet, cutoff, and step.
@@ -93,7 +91,6 @@ $$
 -- The `nanoid_custom()` function generates a compact, URL-friendly unique identifier.
 -- Based on the given size and alphabet, it creates a randomized string that's ideal for
 -- use-cases requiring small, unpredictable IDs (e.g., URL shorteners, generated file names, etc.).
--- It is the counterpart of nanoid(size, alphabet, additionalBytesFactor, prefix) in nanoid-postgres:
 -- MySQL/MariaDB stored functions support neither default parameter values nor overloading,
 -- which is why the defaults live in nanoid(), nanoid_simple() and nanoid_prefixed() instead.
 DROP FUNCTION IF EXISTS nanoid_custom$$

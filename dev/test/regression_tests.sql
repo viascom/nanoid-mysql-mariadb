@@ -37,9 +37,8 @@ FROM (SELECT 0 AS d UNION ALL SELECT 1 UNION ALL SELECT 2 UNION ALL SELECT 3 UNI
    , (SELECT 0 AS d UNION ALL SELECT 1 UNION ALL SELECT 2 UNION ALL SELECT 3 UNION ALL SELECT 4) e;
 
 -- ---------------------------------------------------------------------------------------------
--- Bulk generation. CREATE TABLE ... AS SELECT and INSERT ... SELECT are the MySQL/MariaDB
--- equivalents of the bulk shapes from the postgres issue #16 regression tests (there is no
--- parallel query mode for stored functions in MySQL/MariaDB, so only the data checks apply).
+-- Bulk generation. CREATE TABLE ... AS SELECT and INSERT ... SELECT exercise bulk id
+-- generation and check the generated data for length, alphabet and collisions.
 -- Running the whole suite on MySQL 8.0+ also guards the READS SQL DATA / error 1418 fix from
 -- issue #1, because binary logging is enabled there by default.
 -- ---------------------------------------------------------------------------------------------
