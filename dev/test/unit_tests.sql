@@ -76,6 +76,50 @@ BEGIN
             SET counter = counter + 1;
         END WHILE;
 
+    -- Default alphabet at the sizes around TO_BASE64()'s 76-character line break and the
+    -- 1365-symbol RANDOM_BYTES() limit, where nanoid_simple() switches to nanoid_custom()
+    BEGIN
+        DECLARE sizes VARCHAR(100) DEFAULT '1,2,3,4,75,76,77,152,153,1364,1365,1366,3000';
+        DECLARE testSize INT;
+        WHILE sizes <> ''
+            DO
+                SET testSize = CAST(SUBSTRING_INDEX(sizes, ',', 1) AS UNSIGNED);
+                SET sizes = IF(LOCATE(',', sizes) = 0, '', SUBSTRING(sizes, LOCATE(',', sizes) + 1));
+                SET generated_id = nanoid_simple(testSize);
+                IF CHAR_LENGTH(generated_id) <> testSize THEN
+                    SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'nanoid_simple length is incorrect at a size boundary';
+                END IF;
+                IF generated_id NOT REGEXP '^[-_a-zA-Z0-9]*$' THEN
+                    SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'nanoid_simple contains invalid characters at a size boundary';
+                END IF;
+            END WHILE;
+    END;
+
+    -- Every symbol of the default alphabet must be reachable
+    SET generated_id = nanoid_simple(1365);
+    SET counter = 1;
+    WHILE counter <= 64
+        DO
+            IF LOCATE(CAST(SUBSTRING('_-0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ', counter, 1) AS BINARY),
+                      CAST(generated_id AS BINARY)) = 0 THEN
+                SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Symbol missing in output of the default alphabet';
+            END IF;
+            SET counter = counter + 1;
+        END WHILE;
+
+    -- Invalid sizes keep raising the size error
+    BEGIN
+        DECLARE guardFired INT DEFAULT 0;
+        BEGIN
+            DECLARE CONTINUE HANDLER FOR SQLSTATE '45000' SET guardFired = guardFired + 1;
+            SET generated_id = nanoid_simple(0);
+            SET generated_id = nanoid_simple(NULL);
+        END;
+        IF guardFired <> 2 THEN
+            SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'nanoid_simple did not reject an invalid size';
+        END IF;
+    END;
+
     -- Default size (21), custom alphabet (only lowercase)
     SET counter = 0;
     WHILE counter < numLoops
