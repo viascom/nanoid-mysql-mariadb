@@ -29,6 +29,22 @@ BEGIN
     DECLARE counter INT;
     DECLARE numLoops INT DEFAULT 1000;
 
+    -- All five functions carry the same release version as their comment
+    BEGIN
+        DECLARE functions INT;
+        DECLARE versions INT;
+        DECLARE nanoidVersion VARCHAR(1024);
+
+        SELECT COUNT(*), COUNT(DISTINCT ROUTINE_COMMENT), MIN(ROUTINE_COMMENT)
+        INTO functions, versions, nanoidVersion
+        FROM information_schema.ROUTINES
+        WHERE ROUTINE_SCHEMA = DATABASE()
+          AND ROUTINE_NAME IN ('nanoid', 'nanoid_simple', 'nanoid_prefixed', 'nanoid_custom', 'nanoid_optimized');
+        IF functions <> 5 OR versions <> 1 OR nanoidVersion NOT REGEXP '^nanoid-mysql-mariadb [0-9]+[.][0-9]+[.][0-9]+$' THEN
+            SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'The functions do not carry one common release version comment';
+        END IF;
+    END;
+
     -- Default parameters
     SET counter = 0;
     WHILE counter < numLoops

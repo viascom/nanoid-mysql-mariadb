@@ -15,6 +15,7 @@ DELIMITER $$
  * limitations under the License.
  */
 
+-- Every function carries the release version as its COMMENT, readable from information_schema.ROUTINES.
 -- READS SQL DATA keeps the functions creatable when binary logging is enabled (error 1418)
 -- without requiring log_bin_trust_function_creators.
 -- This script cannot run atomically: MySQL and MariaDB issue an implicit commit for every
@@ -38,6 +39,7 @@ CREATE FUNCTION nanoid_optimized(
     NOT DETERMINISTIC
     SQL SECURITY INVOKER
     READS SQL DATA
+    COMMENT 'nanoid-mysql-mariadb 3.1.0'
 BEGIN
     DECLARE idBuilder LONGTEXT DEFAULT '';
     DECLARE counter INT DEFAULT 0;
@@ -100,6 +102,7 @@ CREATE FUNCTION nanoid_custom(
     NOT DETERMINISTIC
     SQL SECURITY INVOKER
     READS SQL DATA
+    COMMENT 'nanoid-mysql-mariadb 3.1.0'
 BEGIN
     DECLARE alphabetLength INT;
     DECLARE cutoff INT;
@@ -144,6 +147,7 @@ CREATE FUNCTION nanoid_prefixed(
     NOT DETERMINISTIC
     SQL SECURITY INVOKER
     READS SQL DATA
+    COMMENT 'nanoid-mysql-mariadb 3.1.0'
 BEGIN
     RETURN nanoid_custom(21, '_-0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ', 1.6, prefix);
 END
@@ -159,6 +163,7 @@ CREATE FUNCTION nanoid_simple(
     NOT DETERMINISTIC
     SQL SECURITY INVOKER
     READS SQL DATA
+    COMMENT 'nanoid-mysql-mariadb 3.1.0'
 BEGIN
     RETURN nanoid_custom(size, '_-0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ', 1.6, '');
 END
@@ -172,6 +177,7 @@ CREATE FUNCTION nanoid()
     NOT DETERMINISTIC
     SQL SECURITY INVOKER
     READS SQL DATA
+    COMMENT 'nanoid-mysql-mariadb 3.1.0'
 BEGIN
     RETURN nanoid_simple(21);
 END
