@@ -19,7 +19,7 @@
 # specific language governing permissions and limitations
 # under the License.
 #
-# Runs the nanoid test suite (installation, re-installation, unit tests, regression tests,
+# Runs the nanoid test suite (installation, re-installation, unit tests, regression tests, column defaults,
 # upgrade path) against multiple MySQL and MariaDB versions using the official Docker images.
 #
 # The latest minor of each target's image is pulled before it is started, so a stale local
@@ -111,7 +111,7 @@ run_upgrade_test() {
     fi
 
     if [ "$(run_sql "$NAME" "$ENGINE" upgrade_test "SELECT GROUP_CONCAT(ROUTINE_NAME ORDER BY ROUTINE_NAME) FROM information_schema.ROUTINES WHERE ROUTINE_SCHEMA = 'upgrade_test' AND ROUTINE_TYPE = 'FUNCTION';")" != "nanoid,nanoid_custom,nanoid_optimized,nanoid_prefixed,nanoid_simple" ]; then
-        echo "    upgrade test: upgraded database does not expose exactly the five 3.0.0 functions"
+        echo "    upgrade test: upgraded database does not expose exactly the five public functions"
         return 1
     fi
     if [ "$(run_sql "$NAME" "$ENGINE" upgrade_test "SELECT CHAR_LENGTH(nanoid());")" != "21" ]; then
@@ -131,6 +131,24 @@ run_upgrade_test() {
         echo "    upgrade test: the dependent trigger broke during the upgrade"
         return 1
     fi
+    return 0
+}
+
+run_column_default_test() {
+    # $1 = container name, $2 = engine. Checks the trigger-free column default from the README
+    # (expression defaults need MySQL 8.0.13+; every MariaDB target supports them).
+    local NAME="$1" ENGINE="$2"
+    [ "$ENGINE" = "mysql" ] && [ "$(run_sql "$NAME" "$ENGINE" "$DB_NAME" "SELECT VERSION() LIKE '5.%';")" = "1" ] && return 0
+
+    run_sql "$NAME" "$ENGINE" "$DB_NAME" "DROP TABLE IF EXISTS default_test; CREATE TABLE default_test (id VARCHAR(21) NOT NULL DEFAULT (REPLACE(REPLACE(LEFT(TO_BASE64(RANDOM_BYTES(16)), 21), '+', '-'), '/', '_')) PRIMARY KEY, typed_id VARCHAR(25) NOT NULL DEFAULT (CONCAT('usr_', REPLACE(REPLACE(LEFT(TO_BASE64(RANDOM_BYTES(16)), 21), '+', '-'), '/', '_'))), n INT);" &&
+        run_sql "$NAME" "$ENGINE" "$DB_NAME" "INSERT INTO default_test (n) SELECT g FROM (SELECT 1 AS g UNION ALL SELECT 2 UNION ALL SELECT 3 UNION ALL SELECT 4 UNION ALL SELECT 5) t;" ||
+        { echo "    column default test: could not create or fill the table"; return 1; }
+
+    if [ "$(run_sql "$NAME" "$ENGINE" "$DB_NAME" "SELECT COUNT(DISTINCT id) FROM default_test WHERE id REGEXP '^[-_a-zA-Z0-9]{21}\$' AND typed_id LIKE 'usr\\_%' AND CHAR_LENGTH(typed_id) = 25;")" != "5" ]; then
+        echo "    column default test: the column defaults did not generate 5 distinct valid ids"
+        return 1
+    fi
+    run_sql "$NAME" "$ENGINE" "$DB_NAME" "DROP TABLE default_test;"
     return 0
 }
 
@@ -214,6 +232,8 @@ for TARGET in $TARGETS; do
         RESULT="FAIL (regression_tests.sql)"
     elif ! run_upgrade_test "$NAME" "$ENGINE"; then
         RESULT="FAIL (upgrade-path test)"
+    elif ! run_column_default_test "$NAME" "$ENGINE"; then
+        RESULT="FAIL (column default test)"
     fi
 
     SERVER_VERSION="$(docker exec -e MYSQL_PWD="$DB_PASSWORD" "$NAME" "$CLIENT" -uroot -N -B -e 'SELECT VERSION();' 2>/dev/null)"

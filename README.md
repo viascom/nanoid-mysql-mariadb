@@ -32,8 +32,24 @@ prefix does not count towards `size`: the total id length is `CHAR_LENGTH(prefix
 accordingly (for example `VARCHAR(25)` for the default size of 21 plus the 4-character prefix `usr_`). A `NULL`
 prefix behaves like an empty prefix.
 
-Unlike PostgreSQL, MySQL and MariaDB do not allow stored functions in `DEFAULT` expressions,
-so use the trigger setup below for automatic id generation.
+## Column defaults without a trigger
+
+Unlike PostgreSQL, MySQL and MariaDB do not allow stored functions in `DEFAULT` expressions. They do allow built-in
+functions (MySQL 8.0.13 or newer, MariaDB 10.10 or newer), and the default alphabet is base64 with `+` and `/`
+replaced by `-` and `_`. So the built-in expression that `nanoid()` uses works as a column default:
+
+```sql
+CREATE TABLE users
+(
+    id       VARCHAR(21) NOT NULL DEFAULT (REPLACE(REPLACE(LEFT(TO_BASE64(RANDOM_BYTES(16)), 21), '+', '-'), '/', '_')) PRIMARY KEY,
+    typed_id VARCHAR(25) NOT NULL DEFAULT (CONCAT('usr_', REPLACE(REPLACE(LEFT(TO_BASE64(RANDOM_BYTES(16)), 21), '+', '-'), '/', '_'))),
+    name     VARCHAR(100)
+);
+```
+
+`RANDOM_BYTES(16)` returns 128 random bits and the first 21 base64 characters use 126 of them, so every symbol is
+equally likely. For another size up to 76, use `RANDOM_BYTES(CEILING(size * 3 / 4))` and `LEFT(..., size)`; above 76
+characters `TO_BASE64()` inserts line breaks. Custom alphabets and MySQL 5.6/5.7 need the trigger setup below.
 
 ## Auto ID Generation with Triggers
 
@@ -125,7 +141,9 @@ Running `nanoid.sql` again upgrades an existing installation in place. Unlike Po
 implicit commit for every `DROP FUNCTION` / `CREATE FUNCTION`, so the upgrade is not atomic: if a run fails midway,
 rerun the script to complete the installation.
 
-Before upgrading, find existing usages:
+Upgrading from 3.0.0 to 3.1.0 needs nothing beyond running the script: no signature or return type changed.
+
+Before upgrading from 1.x, find existing usages:
 
 ```sql
 SELECT TRIGGER_SCHEMA, TRIGGER_NAME FROM information_schema.TRIGGERS WHERE ACTION_STATEMENT LIKE '%nanoid%';
@@ -133,7 +151,7 @@ SELECT ROUTINE_SCHEMA, ROUTINE_NAME FROM information_schema.ROUTINES WHERE ROUTI
 SELECT TABLE_SCHEMA, TABLE_NAME FROM information_schema.VIEWS WHERE VIEW_DEFINITION LIKE '%nanoid%';
 ```
 
-Also search your application code for direct calls. When upgrading from 1.x to 3.0.0:
+Also search your application code for direct calls. When upgrading from 1.x to 3.x:
 
 - `nanoid_custom()` gained `additionalBytesFactor` and `prefix` parameters since 1.x: existing 2-argument calls fail
   with error 1318 (incorrect number of arguments) until you append the two arguments, `1.6, ''` for the defaults.
@@ -151,7 +169,9 @@ rejected bytes of your alphabet, so the default factor of `1.6` works well for e
 margin the original JavaScript library uses). A higher factor lowers the chance that a second `RANDOM_BYTES()` batch
 is needed at the cost of more memory per call; a factor closer to `1.0` conserves memory but requests follow-up
 batches more often. The step is capped at 1024 because `RANDOM_BYTES()` accepts at most 1024 bytes per call, so once
-that cap is reached a higher factor can no longer reduce the number of follow-up batches.
+that cap is reached a higher factor can no longer reduce the number of follow-up batches. Alphabets whose length divides
+256 (2, 4, 8, ..., 256 symbols) never reject a byte, so for them the step is exactly `size` (capped at 1024) and the
+factor has no effect.
 
 ```sql
 -- Example: trade a little memory for fewer follow-up batches
@@ -202,7 +222,8 @@ The repository ships a test suite that installs `nanoid.sql` into the official M
 runs the unit tests plus regression tests against each of them. The images are pulled before each run, so the latest
 minor of every series is what actually gets tested; a pull failure fails that target by default, and you can set
 `NANOID_TEST_OFFLINE=1` to allow the local image cache when you are deliberately offline. The test suite covers
-re-installation (issue #1), bulk generation without collisions and large-size id generation. Each target also runs an
+re-installation (issue #1), bulk generation without collisions, large-size id generation and the trigger-free column
+defaults (on MySQL 8.0.13+ and every MariaDB target). Each target also runs an
 upgrade-path test: the previous release (from `origin/main`) is installed first, a table with a dependent
 `BEFORE INSERT` trigger is created, and the current `nanoid.sql` is applied on top; the upgrade must succeed in place
 and the trigger must keep generating valid ids.

@@ -128,10 +128,11 @@ BEGIN
     -- modulo bias; see nanoid_optimized().
     SET cutoff = 256 - (256 % alphabetLength);
     -- On average `256 / cutoff` random bytes are needed per symbol; the additional bytes
-    -- factor adds a safety margin to cover unlucky streaks of rejected bytes.
+    -- factor adds a safety margin to cover unlucky streaks of rejected bytes. Alphabets whose
+    -- length divides 256 never reject a byte, so they need exactly `size` bytes.
     -- RANDOM_BYTES() accepts at most 1024 bytes per call; capping inside the expression
     -- also keeps absurd sizes from overflowing the INT assignment.
-    SET step = LEAST(1024, CEILING(additionalBytesFactor * 256 * size / cutoff));
+    SET step = LEAST(1024, IF(cutoff = 256, size, CEILING(additionalBytesFactor * 256 * size / cutoff)));
 
     RETURN CONCAT(COALESCE(prefix, ''), nanoid_optimized(size, alphabet, cutoff, step));
 END
@@ -150,7 +151,7 @@ CREATE FUNCTION nanoid_prefixed(
     SQL SECURITY INVOKER
     READS SQL DATA
 BEGIN
-    RETURN nanoid_custom(21, '_-0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ', 1.6, prefix);
+    RETURN CONCAT(COALESCE(prefix, ''), nanoid_simple(21));
 END
 $$
 
@@ -165,7 +166,15 @@ CREATE FUNCTION nanoid_simple(
     SQL SECURITY INVOKER
     READS SQL DATA
 BEGIN
-    RETURN nanoid_custom(size, '_-0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ', 1.6, '');
+    -- The default alphabet is the base64url alphabet. Every base64 character is a fixed 6-bit
+    -- slice of the random bytes, so all 64 symbols stay equally likely without a generation loop.
+    -- RANDOM_BYTES() returns at most 1024 bytes (1365 symbols); larger and invalid sizes take the
+    -- generic path, which also raises the size error.
+    IF size IS NULL OR size < 1 OR size > 1365 THEN
+        RETURN nanoid_custom(size, '_-0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ', 1.6, '');
+    END IF;
+    -- TO_BASE64() inserts a line break after every 76 characters.
+    RETURN REPLACE(REPLACE(LEFT(REPLACE(TO_BASE64(RANDOM_BYTES(CEILING(size * 3 / 4))), CHAR(10), ''), size), '+', '-'), '/', '_');
 END
 $$
 
