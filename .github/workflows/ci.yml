@@ -1,0 +1,53 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+permissions:
+  contents: read
+
+jobs:
+  targets:
+    name: Targets
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      targets: ${{ steps.targets.outputs.targets }}
+
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      # run_tests.sh holds the only copy of the target list.
+      - name: Read the default targets
+        id: targets
+        run: echo "targets=$(sed -n 's/^DEFAULT_TARGETS="\(.*\)"$/\1/p' dev/test/run_tests.sh | jq -Rc 'split(" ")')" >> "$GITHUB_OUTPUT"
+
+  test:
+    name: ${{ matrix.target }}
+    needs: targets
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        target: ${{ fromJSON(needs.targets.outputs.targets) }}
+
+    steps:
+      # The upgrade-path test installs the previous release from origin/main.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Run the test suite
+        env:
+          TARGET: ${{ matrix.target }}
+        run: dev/test/run_tests.sh "$TARGET"
