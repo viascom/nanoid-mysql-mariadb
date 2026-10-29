@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Question
+    url: https://github.com/viascom/nanoid-mysql-mariadb/discussions
+    about: Ask how to use the functions in Discussions.
+  - name: Security vulnerability
+    url: https://github.com/viascom/nanoid-mysql-mariadb/security/advisories/new
+    about: Report a vulnerability privately, not in a public issue.

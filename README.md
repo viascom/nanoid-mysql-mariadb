@@ -1,5 +1,9 @@
 # Nano ID for MySQL / MariaDB
 
+[![CI](https://github.com/viascom/nanoid-mysql-mariadb/actions/workflows/ci.yml/badge.svg)](https://github.com/viascom/nanoid-mysql-mariadb/actions/workflows/ci.yml)
+[![Release](https://img.shields.io/github/v/release/viascom/nanoid-mysql-mariadb)](https://github.com/viascom/nanoid-mysql-mariadb/releases/latest)
+[![License](https://img.shields.io/github/license/viascom/nanoid-mysql-mariadb)](LICENSE)
+
 _Inspired by the following parent project: [ai/nanoid](https://github.com/ai/nanoid)_
 
 <img src="./logo.svg" align="right" alt="Nano ID logo by Anton Lovchikov" width="180" height="94">
@@ -225,15 +229,19 @@ If you're using PostgreSQL and you found this library helpful, we have a similar
 
 ## 🌱 Contributors Welcome
 
-- 🐛 **Encountered a Bug?** Let us know with an issue. Every bit of feedback helps enhance the project.
+- 🐛 **Encountered a Bug?** Let us know with an [issue](https://github.com/viascom/nanoid-mysql-mariadb/issues/new/choose).
+  Every bit of feedback helps enhance the project.
 
-- 💡 **Interested in Contributing Code?** Simply fork and submit a pull request. Every contribution,
-  no matter its size, is valued.
+- 💡 **Interested in Contributing Code?** Fork and submit a pull request. [CONTRIBUTING.md](CONTRIBUTING.md) explains
+  how to run the tests and what a change needs. Every contribution, no matter its size, is valued.
 
-- 📣 **Have Some Ideas?** We're always open to suggestions. Initiate an issue for discussions or to
-  share your insights.
+- 📣 **Have Some Ideas or Questions?** Start a thread in
+  [Discussions](https://github.com/viascom/nanoid-mysql-mariadb/discussions) or open a feature request.
 
-All relevant details about the project can be found in this README.
+- 🔒 **Found a Vulnerability?** Report it privately as described in [SECURITY.md](SECURITY.md).
+
+Everyone taking part follows the [Code of Conduct](CODE_OF_CONDUCT.md). Changes per release are listed in
+[CHANGELOG.md](CHANGELOG.md).
 
 Your active participation 🤝 is a cornerstone of **nanoid-mysql-mariadb**. Thank you for joining us
 on this journey.
