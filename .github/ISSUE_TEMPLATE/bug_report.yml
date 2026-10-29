@@ -1,0 +1,40 @@
+name: Bug report
+description: A function fails, returns a wrong id or does not install.
+labels: [bug]
+body:
+  - type: input
+    id: server
+    attributes:
+      label: Server and version
+      description: The output of `SELECT VERSION();`
+      placeholder: 8.4.6 / 11.8.3-MariaDB
+    validations:
+      required: true
+  - type: input
+    id: release
+    attributes:
+      label: nanoid-mysql-mariadb release
+      description: "Since 3.1.0: `SELECT ROUTINE_COMMENT FROM information_schema.ROUTINES WHERE ROUTINE_SCHEMA = DATABASE() AND ROUTINE_NAME = 'nanoid';`. Older installations: the release or commit you installed."
+      placeholder: 3.0.0
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Steps to reproduce
+      description: The SQL you ran, ideally a minimal script that reproduces the problem on an empty schema.
+      render: sql
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected and actual result
+      description: What you expected, what happened instead, and the full error message if there was one.
+    validations:
+      required: true
+  - type: textarea
+    id: context
+    attributes:
+      label: Additional context
+      description: Client and connector, schema character set, binary logging or replication setup, anything else that may matter.

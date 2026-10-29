@@ -1,5 +1,9 @@
 # Nano ID for MySQL / MariaDB
 
+[![CI](https://github.com/viascom/nanoid-mysql-mariadb/actions/workflows/ci.yml/badge.svg)](https://github.com/viascom/nanoid-mysql-mariadb/actions/workflows/ci.yml)
+[![Release](https://img.shields.io/github/v/release/viascom/nanoid-mysql-mariadb)](https://github.com/viascom/nanoid-mysql-mariadb/releases/latest)
+[![License](https://img.shields.io/github/license/viascom/nanoid-mysql-mariadb)](LICENSE)
+
 _Inspired by the following parent project: [ai/nanoid](https://github.com/ai/nanoid)_
 
 <img src="./logo.svg" align="right" alt="Nano ID logo by Anton Lovchikov" width="180" height="94">
@@ -119,6 +123,27 @@ specific database where you run the SQL code provided.
 
 **Manually create the function in each database:** You can connect to each database and create the function. This function can be created manually or through a script if you have many databases. Remember to manage updates to the function. If you change the function in one database, those changes will only be reflected in the other databases if you update each function.
 
+### Installation
+
+Download `nanoid.sql` from a release tag, so you know exactly which version you install, and run it with the client
+(`mariadb` instead of `mysql` on MariaDB):
+
+```bash
+curl -fsSLO https://raw.githubusercontent.com/viascom/nanoid-mysql-mariadb/3.1.0/nanoid.sql
+mysql -u <user> -p mydb < nanoid.sql
+```
+
+### Installed version
+
+Since 3.1.0 every function carries the release version as its comment:
+
+```sql
+SELECT ROUTINE_COMMENT FROM information_schema.ROUTINES
+WHERE ROUTINE_SCHEMA = DATABASE() AND ROUTINE_NAME = 'nanoid'; -- nanoid-mysql-mariadb 3.1.0
+```
+
+An empty comment means an installation older than 3.1.0.
+
 ## Upgrading
 
 Running `nanoid.sql` again upgrades an existing installation in place. Unlike PostgreSQL, MySQL and MariaDB issue an
@@ -142,6 +167,19 @@ Also search your application code for direct calls. When upgrading from 1.x to 3
   alphabet. Old mask values keep running but silently produce biased ids in which the last alphabet symbol never
   appears.
 - Triggers keep working untouched; they resolve `nanoid()` at execution time.
+
+## Uninstalling
+
+```sql
+DROP FUNCTION IF EXISTS nanoid;
+DROP FUNCTION IF EXISTS nanoid_simple;
+DROP FUNCTION IF EXISTS nanoid_prefixed;
+DROP FUNCTION IF EXISTS nanoid_custom;
+DROP FUNCTION IF EXISTS nanoid_optimized;
+```
+
+MySQL and MariaDB do not track which triggers, views or routines call the functions, so the drop always succeeds and
+those objects fail on their next use. Find them first with the queries under [Upgrading](#upgrading).
 
 ## The additional bytes factor
 
@@ -217,7 +255,9 @@ dev/test/run_tests.sh
 dev/test/run_tests.sh mysql:8.0 mariadb:11.4
 ```
 
-The script prints a per-version PASS/FAIL summary and exits non-zero if any version fails.
+The script prints a per-version PASS/FAIL summary and exits non-zero if any version fails. The
+[CI workflow](https://github.com/viascom/nanoid-mysql-mariadb/actions/workflows/ci.yml) runs the same suite for
+every target on each pull request and push to `main`.
 
 ## Using PostgreSQL?
 
@@ -225,15 +265,19 @@ If you're using PostgreSQL and you found this library helpful, we have a similar
 
 ## 🌱 Contributors Welcome
 
-- 🐛 **Encountered a Bug?** Let us know with an issue. Every bit of feedback helps enhance the project.
+- 🐛 **Encountered a Bug?** Let us know with an [issue](https://github.com/viascom/nanoid-mysql-mariadb/issues/new/choose).
+  Every bit of feedback helps enhance the project.
 
-- 💡 **Interested in Contributing Code?** Simply fork and submit a pull request. Every contribution,
-  no matter its size, is valued.
+- 💡 **Interested in Contributing Code?** Fork and submit a pull request. [CONTRIBUTING.md](CONTRIBUTING.md) explains
+  how to run the tests and what a change needs. Every contribution, no matter its size, is valued.
 
-- 📣 **Have Some Ideas?** We're always open to suggestions. Initiate an issue for discussions or to
-  share your insights.
+- 📣 **Have Some Ideas or Questions?** Start a thread in
+  [Discussions](https://github.com/viascom/nanoid-mysql-mariadb/discussions) or open a feature request.
 
-All relevant details about the project can be found in this README.
+- 🔒 **Found a Vulnerability?** Report it privately as described in [SECURITY.md](SECURITY.md).
+
+Everyone taking part follows the [Code of Conduct](CODE_OF_CONDUCT.md). Changes per release are listed in
+[CHANGELOG.md](CHANGELOG.md).
 
 Your active participation 🤝 is a cornerstone of **nanoid-mysql-mariadb**. Thank you for joining us
 on this journey.
