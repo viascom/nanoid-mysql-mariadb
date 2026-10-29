@@ -14,7 +14,7 @@ body:
     id: release
     attributes:
       label: nanoid-mysql-mariadb release
-      description: The release whose `nanoid.sql` you installed, or the commit if you installed from `main`.
+      description: "Since 3.1.0: `SELECT ROUTINE_COMMENT FROM information_schema.ROUTINES WHERE ROUTINE_SCHEMA = DATABASE() AND ROUTINE_NAME = 'nanoid';`. Older installations: the release or commit you installed."
       placeholder: 3.0.0
     validations:
       required: true

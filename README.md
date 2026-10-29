@@ -123,6 +123,27 @@ specific database where you run the SQL code provided.
 
 **Manually create the function in each database:** You can connect to each database and create the function. This function can be created manually or through a script if you have many databases. Remember to manage updates to the function. If you change the function in one database, those changes will only be reflected in the other databases if you update each function.
 
+### Installation
+
+Download `nanoid.sql` from a release tag, so you know exactly which version you install, and run it with the client
+(`mariadb` instead of `mysql` on MariaDB):
+
+```bash
+curl -fsSLO https://raw.githubusercontent.com/viascom/nanoid-mysql-mariadb/3.1.0/nanoid.sql
+mysql -u <user> -p mydb < nanoid.sql
+```
+
+### Installed version
+
+Since 3.1.0 every function carries the release version as its comment:
+
+```sql
+SELECT ROUTINE_COMMENT FROM information_schema.ROUTINES
+WHERE ROUTINE_SCHEMA = DATABASE() AND ROUTINE_NAME = 'nanoid'; -- nanoid-mysql-mariadb 3.1.0
+```
+
+An empty comment means an installation older than 3.1.0.
+
 ## Upgrading
 
 Running `nanoid.sql` again upgrades an existing installation in place. Unlike PostgreSQL, MySQL and MariaDB issue an
@@ -146,6 +167,19 @@ Also search your application code for direct calls. When upgrading from 1.x to 3
   alphabet. Old mask values keep running but silently produce biased ids in which the last alphabet symbol never
   appears.
 - Triggers keep working untouched; they resolve `nanoid()` at execution time.
+
+## Uninstalling
+
+```sql
+DROP FUNCTION IF EXISTS nanoid;
+DROP FUNCTION IF EXISTS nanoid_simple;
+DROP FUNCTION IF EXISTS nanoid_prefixed;
+DROP FUNCTION IF EXISTS nanoid_custom;
+DROP FUNCTION IF EXISTS nanoid_optimized;
+```
+
+MySQL and MariaDB do not track which triggers, views or routines call the functions, so the drop always succeeds and
+those objects fail on their next use. Find them first with the queries under [Upgrading](#upgrading).
 
 ## The additional bytes factor
 
@@ -221,7 +255,9 @@ dev/test/run_tests.sh
 dev/test/run_tests.sh mysql:8.0 mariadb:11.4
 ```
 
-The script prints a per-version PASS/FAIL summary and exits non-zero if any version fails.
+The script prints a per-version PASS/FAIL summary and exits non-zero if any version fails. The
+[CI workflow](https://github.com/viascom/nanoid-mysql-mariadb/actions/workflows/ci.yml) runs the same suite for
+every target on each pull request and push to `main`.
 
 ## Using PostgreSQL?
 

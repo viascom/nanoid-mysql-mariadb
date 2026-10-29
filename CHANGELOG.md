@@ -8,8 +8,10 @@ All notable changes to this project are documented here. The format follows
 
 ### Added
 
+- Every function carries the release version as its comment, readable from `information_schema.ROUTINES`.
 - CI on GitHub Actions runs the full test matrix on every pull request and push to `main`, one job per target.
 - `CONTRIBUTING.md`, `CODE_OF_CONDUCT.md`, `SECURITY.md`, issue and pull request templates, and this changelog.
+- README sections on installing a pinned release, reading the installed version and uninstalling.
 
 ### Changed
 

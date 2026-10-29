@@ -55,8 +55,9 @@ matrix on every pull request, one job per target.
 Versions follow [Semantic Versioning](https://semver.org/). A changed function signature, return type or error
 behavior is a breaking change.
 
-1. Move the *Unreleased* entries in `CHANGELOG.md` under the new version.
-2. After the pull request is merged, tag the merge commit as `X.Y.Z` (no `v` prefix).
+1. Bump the version in the five `COMMENT 'nanoid-mysql-mariadb X.Y.Z'` lines of `nanoid.sql` and move the
+   *Unreleased* entries in `CHANGELOG.md` under the new version.
+2. Merge to `main` and wait for the CI workflow to pass, then tag the merge commit as `X.Y.Z` (no `v` prefix).
 3. Publish a GitHub release titled `vX.Y.Z - <short summary>` with notes in the style of the earlier releases:
    breaking changes, new features, fixes, changes, verification and, for breaking releases, a migration guide.
 
